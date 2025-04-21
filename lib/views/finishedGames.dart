@@ -58,28 +58,33 @@ class _FinishedGameListState extends State<FinishedGameList> {
     }
   }
 
-  String getPersonalizedResult(Map<String, dynamic> game) {
-    if (username == null) return 'Unknown';
+  Widget getPersonalizedBadge(Map<String, dynamic> game) {
+    if (username == null) return Text('Unknown');
 
     int status = game['status'];
     String player1 = game['player1'] ?? '';
     String player2 = game['player2'] ?? '';
 
     if (status == 1) {
-      return username == player1 ? 'GameWon' : 'GameLost';
+      return username == player1
+          ? Badge(text: 'You won', color: Colors.green)
+          : Badge(text: 'You lost', color: Colors.red);
     } else if (status == 2) {
-      return username == player2 ? 'GameWon' : 'GameLost';
+      return username == player2
+          ? Badge(text: 'You won', color: Colors.green)
+          : Badge(text: 'You lost', color: Colors.red);
     } else {
-      return 'Unknown';
+      return Badge(text: 'Unknown', color: Colors.grey);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+        backgroundColor: Colors.black,
         appBar: AppBar(
           centerTitle: true,
-          backgroundColor: Colors.blue,
+          backgroundColor: Colors.deepPurple,
           title: Text('Completed Games'),
           actions: [
             IconButton(
@@ -98,17 +103,26 @@ class _FinishedGameListState extends State<FinishedGameList> {
               final gameStatus = game['status'];
 
               if (gameStatus == 1 || gameStatus == 2) {
-                return ListTile(
-                  title: Text('Game ID: ${game['id']}'),
-                  subtitle: game['player1'] != null && game['player2'] != null
-                      ? Text(
-                          'Players: ${game['player1']} vs ${game['player2']}')
-                      : Text('Matchmaking phase'),
-                  trailing: Text(getPersonalizedResult(game)),
-                  onTap: () {},
-                  onLongPress: () {
-                    showDeleteDialog(context, game);
-                  },
+                return Card(
+                  color: Colors.grey[850],
+                  child: ListTile(
+                    title: Text(
+                      'Game ID: ${game['id']}',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    subtitle: game['player1'] != null &&
+                            game['player2'] != null
+                        ? Text(
+                            'Players: ${game['player1']} vs ${game['player2']}',
+                            style: TextStyle(color: Colors.white70),
+                          )
+                        : Text('Matchmaking phase',
+                            style: TextStyle(color: Colors.white54)),
+                    trailing: getPersonalizedBadge(game),
+                    onLongPress: () {
+                      showDeleteDialog(context, game);
+                    },
+                  ),
                 );
               } else {
                 return SizedBox.shrink();
@@ -122,22 +136,43 @@ class _FinishedGameListState extends State<FinishedGameList> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete Game'),
-        content: Text('Are you sure you want to delete this game?'),
+        backgroundColor: Colors.grey[900],
+        title: Text('Delete Game', style: TextStyle(color: Colors.white)),
+        content: Text('Are you sure you want to delete this game?',
+            style: TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               debugPrint('Game deletion confirmed for ID: ${game['id']}');
             },
-            child: Text('Delete'),
+            child: Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
+    );
+  }
+}
+
+class Badge extends StatelessWidget {
+  final String text;
+  final Color color;
+
+  const Badge({super.key, required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(text, style: TextStyle(color: Colors.white)),
     );
   }
 }

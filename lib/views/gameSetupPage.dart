@@ -6,11 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:battleships/utils/constants.dart';
-
-
 import 'package:shared_preferences/shared_preferences.dart';
-
-
 
 class GameSetupPage extends StatefulWidget {
   const GameSetupPage({super.key});
@@ -22,6 +18,7 @@ class GameSetupPage extends StatefulWidget {
 class _GameSetupPageState extends State<GameSetupPage> {
   List<String> selectedShips = [];
   bool isGameStarted = false;
+  final ScrollController _scrollController = ScrollController();
 
   void handleCellSelection(String cell) {
     setState(() {
@@ -75,8 +72,7 @@ class _GameSetupPageState extends State<GameSetupPage> {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        debugPrint(
-            'Game started! ID: ${responseData['id']}, Player: ${responseData['player']}, Matched: ${responseData['matched']}');
+        debugPrint('Game started! ID: ${responseData['id']}');
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => GameList()),
         );
@@ -103,15 +99,16 @@ class _GameSetupPageState extends State<GameSetupPage> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: Text(title),
-          content: Text(content),
+          backgroundColor: Colors.grey[900],
+          title: Text(title, style: TextStyle(color: Colors.white)),
+          content: Text(content, style: TextStyle(color: Colors.white70)),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
                 if (additionalAction != null) additionalAction();
               },
-              child: Text('OK'),
+              child: Text('OK', style: TextStyle(color: Colors.blueAccent)),
             ),
           ],
         );
@@ -122,25 +119,35 @@ class _GameSetupPageState extends State<GameSetupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          centerTitle: true,
-          backgroundColor: Colors.blue,
-          title: Text('New Game'),
-        ),
-        body: SafeArea(
-            child: SingleChildScrollView(
-          child: Padding(
+      backgroundColor: Color(0xFF121212),
+      appBar: AppBar(
+        centerTitle: true,
+        backgroundColor: Colors.purple,
+        title: Text('New Game', style: TextStyle(color: Colors.white)),
+        iconTheme: IconThemeData(color: Colors.white),
+      ),
+      body: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: Scrollbar(
+          controller: _scrollController,
+          thumbVisibility: true,
+          interactive: true,
+          thickness: 8,
+          radius: Radius.circular(8),
+          child: SingleChildScrollView(
+            controller: _scrollController,
             padding: EdgeInsets.all(16.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   'Select cells to position your ships',
-                  style: TextStyle(fontSize: 18.0),
+                  style: TextStyle(fontSize: 18.0, color: Colors.white),
                 ),
                 SizedBox(height: 16.0),
                 GridView.builder(
                   shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 5,
                     crossAxisSpacing: 4.0,
@@ -162,15 +169,18 @@ class _GameSetupPageState extends State<GameSetupPage> {
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black),
+                          border: Border.all(color: Colors.cyanAccent),
                           color: selectedShips.contains(cellId)
                               ? Colors.blue
-                              : Colors.white,
+                              : Colors.grey[850],
                         ),
                         child: Center(
                           child: Text(
                             cellId,
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -179,12 +189,17 @@ class _GameSetupPageState extends State<GameSetupPage> {
                 ),
                 SizedBox(height: 16.0),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                  ),
                   onPressed: isGameStarted ? null : initiateGame,
                   child: Text('Start Game'),
                 ),
               ],
             ),
           ),
-        )));
+        ),
+      ),
+    );
   }
 }

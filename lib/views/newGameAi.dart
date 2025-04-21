@@ -6,11 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:battleships/utils/constants.dart';
-
-
 import 'package:shared_preferences/shared_preferences.dart';
-
-
 
 class NewGamePageai extends StatefulWidget {
   final String AiType;
@@ -24,11 +20,11 @@ class NewGamePageai extends StatefulWidget {
 class _NewGamePageaiState extends State<NewGamePageai> {
   List<String> selectedShips = [];
   bool isGameStarted = false;
+  final ScrollController _scrollController = ScrollController();
 
   Future<void> startGame() async {
     if (selectedShips.length != 5) {
-      showErrorDialog(
-          context, 'Error', 'Please place exactly 5 ships to start the game.');
+      showErrorDialog(context, 'Error', 'Please place exactly 5 ships to start the game.');
       return;
     }
 
@@ -64,19 +60,16 @@ class _NewGamePageaiState extends State<NewGamePageai> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        debugPrint(
-            'Game started! ID: ${data['id']}, Player: ${data['player']}, Matched: ${data['matched']}');
+        debugPrint('Game started! ID: ${data['id']}');
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => GameList()),
         );
       } else {
-        showErrorDialog(
-            context, 'Error', 'Failed to start the game. Please try again.');
+        showErrorDialog(context, 'Error', 'Failed to start the game. Please try again.');
       }
     } catch (error) {
       debugPrint('Error starting game: $error');
-      showErrorDialog(
-          context, 'Error', 'An unexpected error occurred. Please try again.');
+      showErrorDialog(context, 'Error', 'An unexpected error occurred. Please try again.');
     }
   }
 
@@ -90,21 +83,21 @@ class _NewGamePageaiState extends State<NewGamePageai> {
     });
   }
 
-  void showErrorDialog(BuildContext context, String title, String message,
-      {VoidCallback? onOk}) {
+  void showErrorDialog(BuildContext context, String title, String message, {VoidCallback? onOk}) {
     showDialog(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: Text(title),
-          content: Text(message),
+          backgroundColor: Colors.grey[900],
+          title: Text(title, style: TextStyle(color: Colors.white)),
+          content: Text(message, style: TextStyle(color: Colors.white70)),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
                 if (onOk != null) onOk();
               },
-              child: Text('OK'),
+              child: Text('OK', style: TextStyle(color: Colors.blueAccent)),
             ),
           ],
         );
@@ -115,26 +108,35 @@ class _NewGamePageaiState extends State<NewGamePageai> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          centerTitle: true,
-          backgroundColor: Colors.blue,
-          title: Text('New AI Game'),
-        ),
-        body: SingleChildScrollView(
-            child: Padding(
-          padding: EdgeInsets.all(8.0),
-          child: Padding(
-            padding: EdgeInsets.all(16.0),
+      backgroundColor: Color(0xFF121212),
+      appBar: AppBar(
+        centerTitle: true,
+        backgroundColor: Colors.black,
+        title: Text('New AI Game', style: TextStyle(color: Colors.white)),
+        iconTheme: IconThemeData(color: Colors.white),
+      ),
+      body: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: Scrollbar(
+          controller: _scrollController,
+          thumbVisibility: true,
+          interactive: true,
+          thickness: 8,
+          radius: Radius.circular(8),
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            padding: EdgeInsets.all(16),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   'Tap on the cells to place your ships',
-                  style: TextStyle(fontSize: 18.0),
+                  style: TextStyle(fontSize: 18.0, color: Colors.white),
                 ),
                 SizedBox(height: 16.0),
                 GridView.builder(
                   shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 5,
                     crossAxisSpacing: 4.0,
@@ -144,8 +146,7 @@ class _NewGamePageaiState extends State<NewGamePageai> {
                   itemBuilder: (context, index) {
                     final row = index ~/ 5;
                     final col = index % 5;
-                    final cell = String.fromCharCode('A'.codeUnitAt(0) + row) +
-                        (col + 1).toString();
+                    final cell = String.fromCharCode('A'.codeUnitAt(0) + row) + (col + 1).toString();
                     return GestureDetector(
                       onTap: () {
                         if (!isGameStarted) {
@@ -154,16 +155,17 @@ class _NewGamePageaiState extends State<NewGamePageai> {
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black),
+                          border: Border.all(color: Colors.grey),
                           color: selectedShips.contains(cell)
                               ? Colors.blue
-                              : Colors.white,
+                              : Colors.grey[850],
                         ),
                         child: Center(
                           child: Text(
                             cell,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
                         ),
@@ -173,12 +175,17 @@ class _NewGamePageaiState extends State<NewGamePageai> {
                 ),
                 SizedBox(height: 16.0),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                  ),
                   onPressed: isGameStarted ? null : startGame,
                   child: Text('Start Game'),
                 ),
               ],
             ),
           ),
-        )));
+        ),
+      ),
+    );
   }
 }

@@ -1,8 +1,8 @@
 // ignore_for_file: prefer_const_constructors, use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:battleships/utils/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -19,6 +19,7 @@ class _BattleScreenState extends State<BattleScreen> {
   Map<String, dynamic>? gameInfo;
   String? selectedBlock;
   String? username;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -34,19 +35,33 @@ class _BattleScreenState extends State<BattleScreen> {
     });
   }
 
-  Widget buildCellContent(String cellValue) {
-    switch (cellValue) {
-      case 'ship':
-        return FaIcon(FontAwesomeIcons.ship, color: Colors.blue);
-      case 'hit':
-        return FaIcon(FontAwesomeIcons.droplet, color: Colors.grey);
-      case 'miss':
-        return FaIcon(FontAwesomeIcons.cloud, color: Colors.grey);
-      case 'wreck':
-        return FaIcon(FontAwesomeIcons.explosion, color: Colors.red);
-      default:
-        return SizedBox.shrink();
+  Widget buildCellContent(String cellId) {
+    final shots = gameInfo!['shots'];
+    final sunk = gameInfo!['sunk'];
+    final wrecks = gameInfo!['wrecks'];
+    final ships = gameInfo!['ships'];
+
+    List<String> emojis = [];
+
+    if (ships.contains(cellId)) {
+      emojis.add("🛳️");
     }
+    if (wrecks.contains(cellId)) {
+      emojis.add("🫧");
+    }
+    if (shots.contains(cellId)) {
+      if (sunk.contains(cellId)) {
+        emojis.add("💥");
+      } else {
+        emojis.add("💣");
+      }
+    }
+
+    return Text(
+      emojis.join(" "),
+      style: TextStyle(fontSize: 20),
+      textAlign: TextAlign.center,
+    );
   }
 
   String fetchStatusDescription(int status) {
@@ -178,10 +193,12 @@ class _BattleScreenState extends State<BattleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color(0xFF121212),
       appBar: AppBar(
+        backgroundColor: Color(0xFF1F1F1F),
+        iconTheme: IconThemeData(color: Colors.white),
+        title: Text('💣 Battleship Game', style: TextStyle(color: Colors.white)),
         centerTitle: true,
-        backgroundColor: Colors.blue,
-        title: Text('Play Game'),
       ),
       body: gameInfo != null
           ? buildGameDetails()
@@ -190,33 +207,44 @@ class _BattleScreenState extends State<BattleScreen> {
   }
 
   Widget buildGameDetails() {
-    return SingleChildScrollView(
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Game ID: ${gameInfo!['id']}'),
-            Text('Status: ${fetchStatusDescription(gameInfo!['status'])}'),
-            SizedBox(height: 20),
-            buildGameBoard(),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                if (selectedBlock != null) {
-                  if (gameInfo!['player2'] == 'AI-perfect' ||
-                      gameInfo!['player2'] == 'AI-random' ||
-                      gameInfo!['player2'] == 'AI-oneship') {
-                    submitAIShot(selectedBlock!);
+    return Scrollbar(
+      controller: _scrollController,
+      thumbVisibility: true,
+      thickness: 6,
+      radius: Radius.circular(8),
+      trackVisibility: true,
+      interactive: true,
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(height: 10),
+              Text('Game ID: ${gameInfo!['id']}', style: TextStyle(color: Colors.white)),
+              Text('Status: ${fetchStatusDescription(gameInfo!['status'])}', style: TextStyle(color: Colors.white70)),
+              SizedBox(height: 20),
+              buildGameBoard(),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  if (selectedBlock != null) {
+                    if (gameInfo!['player2'] == 'AI-perfect' ||
+                        gameInfo!['player2'] == 'AI-random' ||
+                        gameInfo!['player2'] == 'AI-oneship') {
+                      submitAIShot(selectedBlock!);
+                    } else {
+                      submitPlayerShot(selectedBlock!);
+                    }
                   } else {
-                    submitPlayerShot(selectedBlock!);
+                    displayErrorDialog('Please select a block on the game board.');
                   }
-                } else {
-                  displayErrorDialog('Please select a block on the game board.');
-                }
-              },
-              child: Text('Play Shot'),
-            ),
-          ],
+                },
+                child: Text('Play Shot'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -225,6 +253,7 @@ class _BattleScreenState extends State<BattleScreen> {
   Widget buildGameBoard() {
     return GridView.builder(
       shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 5,
       ),
@@ -232,43 +261,27 @@ class _BattleScreenState extends State<BattleScreen> {
       itemBuilder: (context, index) {
         int row = index ~/ 5;
         int col = index % 5;
-        String cellValue = getCellContent(row, col);
-        String cell =
-            String.fromCharCode('A'.codeUnitAt(0) + row) + (col + 1).toString();
+        String cellId = String.fromCharCode('A'.codeUnitAt(0) + row) + (col + 1).toString();
 
         return GestureDetector(
           onTap: () {
             setState(() {
-              selectedBlock = cell;
+              selectedBlock = cellId;
             });
           },
           child: Container(
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              border: Border.all(),
-              color: selectedBlock == cell ? Colors.green : Colors.transparent,
+              border: Border.all(color: Colors.white24),
+              color: selectedBlock == cellId ? Colors.green[800] : Color(0xFF1F1F1F),
             ),
             child: Center(
-              child: buildCellContent(cellValue),
+              child: buildCellContent(cellId),
             ),
           ),
         );
       },
     );
-  }
-
-  String getCellContent(int row, int col) {
-    String cellId =
-        String.fromCharCode('A'.codeUnitAt(0) + row) + (col + 1).toString();
-    if (gameInfo!['ships'].contains(cellId)) {
-      return 'ship';
-    } else if (gameInfo!['shots'].contains(cellId)) {
-      return gameInfo!['sunk'].contains(cellId) ? 'hit' : 'miss';
-    } else if (gameInfo!['wrecks'].contains(cellId)) {
-      return 'wreck';
-    } else {
-      return 'empty';
-    }
   }
 }
